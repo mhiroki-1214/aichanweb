@@ -1,22 +1,29 @@
+// ↓まずは各jsでどこ使うねんていう宣言
 let scene, renderer, camera, mesh, helper;
 
+// 準備出来てないのでfalse
 let ready = false;
 
-//browser size
+//ブラウザーサイズを確認。これでアイちゃんの大きさを確定する。
 const windowWidth = window.innerWidth;
 const windowHeight = window.innerHeight;
 
-//Obujet Clock
+//オブジェクト時間。要らないかもしれないけどオシャレなんでつけてる
 const clock = new THREE.Clock();
 
 
+// 外部ファイルとかどこのどれを読み込むの？を指定
+// 仮にこのAudioClipをtrueにすると該当したmp3が再生される。
+// ていう機構にしたかったけどエラー吐きまくるのでやるなら自己責任で。
 const Pmx = "./pmx/musubiai2.0/aichan.pmx";
 const MotionObjects = [
   { id: "loop", VmdClip: null, AudioClip: false },
   { id: "kei_voice_009_1", VmdClip: null, AudioClip: false },
   { id: "kei_voice_010_2", VmdClip: null, AudioClip: false },
+  // { id: "thinking", VmdClip: null, AudioClip: false },
 ];
 
+// リログなど開かれたときに処理発生
 window.onload = () => {
   Init();
 
@@ -26,8 +33,8 @@ window.onload = () => {
 }
 
 /*
- * Initialize Three
- * camera and right
+ * 3つの初期化をする。
+ * あと、カメラとライトも
  */
 Init = () => {
   scene = new THREE.Scene();
@@ -49,12 +56,12 @@ Init = () => {
 }
 
 /*
- * Load PMX and VMD and Audio
+ * .pmxと.vmdとmp3のロード。
  */
 LoadModeler = async () => {
   const loader = new THREE.MMDLoader();
 
-  //Loading PMX
+  //PMXのロード
   LoadPMX = () => {
     return new Promise(resolve => {
       loader.load(Pmx, (object) => {
@@ -66,7 +73,7 @@ LoadModeler = async () => {
     });
   }
 
-  //Loading VMD
+  //VMDのロード
   LoadVMD = (id) => {
     return new Promise(resolve => {
       const path = "./vmd/" + id + ".vmd";
@@ -82,7 +89,7 @@ LoadModeler = async () => {
     });
   }
 
-  //Load Audio
+  //MP3のロード
   LoadAudio = (id) => {
     return new Promise(resolve => {
       const path = "./audio/" + id + ".mp3";
@@ -102,31 +109,33 @@ LoadModeler = async () => {
     });
   }
 
-  // Loading PMX...
+  // ローディング中(PMX)
   await LoadPMX();
 
-  // Loading VMD...
+  // ローディング(VMD)
   await Promise.all(MotionObjects.map(async (MotionObject) => {
     return await LoadVMD(MotionObject.id);
   }));
 
-  // Loading Audio...
+  // ローディング(MP3)
   await Promise.all(MotionObjects.map(async (MotionObject) => {
     return await LoadAudio(MotionObject.id);
   }));
 
-  //Set VMD on Mesh
+  //　テクスチャを設置。
   VmdControl("loop", true);
 }
+// ☝この読み込み順なので最初はボーンを読み込んで、だんだん外見が出来上がっていくのがわかると思います。
+
 
 /*
- * Start Vmd and Audio.
- * And, Get Vmd Loop Event
+ * VMDとMP3を再生
+ * 加えて、ループするVMDの確定
  */
 VmdControl = (id, loop) => {
   const index = MotionObjects.findIndex(MotionObject => MotionObject.id == id);
 
-  // Not Found id
+  // 仮にIDが一致しなかったで！と言われたら
   if (index === -1) {
     console.log("not Found ID");
     return;
@@ -141,23 +150,23 @@ VmdControl = (id, loop) => {
     physics: false
   });
 
-  //Start Audio
+  //MP3再生
   if (MotionObjects[index].AudioClip) {
     MotionObjects[index].AudioClip.play();
   }
 
   const mixer = helper.objects.get(mesh).mixer;
-  //animation Loop Once
+  //どれループ？を見る
   if (!loop) {
     mixer.existingAction(MotionObjects[index].VmdClip).setLoop(THREE.LoopOnce);
   }
 
-  // VMD Loop Event
+  // ループイベント
   mixer.addEventListener("loop", (event) => {
     console.log("loop");
   });
 
-  // VMD Loop Once Event
+  // ループ以外のVMDの再生が終わったらループに指定したVMDに戻す
   mixer.addEventListener("finished", (event) => {
     console.log("finished");
     VmdControl("loop", true);
@@ -169,7 +178,7 @@ VmdControl = (id, loop) => {
 
 
 /*
- * Loading PMX or VMD or Voice
+ * PMXかVMDかMP3のロード(コンソールを開いてからリログすると見れます)
  */
 onProgress = (xhr) => {
   if (xhr.lengthComputable) {
@@ -179,14 +188,14 @@ onProgress = (xhr) => {
 }
 
 /* 
- * loading error
+ * ロードエラーが発生次第、報告。直前に行ったやつの直下にでるのでどこがエラーかわかりやすいようにしてる。
  */
 onError = (xhr) => {
   console.log("ERROR");
 }
 
 /*
- * MMD Model Render
+ * アイちゃんの外見を張り付けたりする。
  */
 Render = () => {
   requestAnimationFrame(Render);
@@ -199,7 +208,8 @@ Render = () => {
 }
 
 /*
- * Click Event
+ *　クリックイベント
+ *　switchでまとめてる。
  */
 PoseClickEvent = (id) => {
   switch (id) {
@@ -214,6 +224,10 @@ PoseClickEvent = (id) => {
     case "pose3":
       VmdControl("kei_voice_010_2", false);
       break;
+      
+    // case "pose3":
+    //   VmdControl("thinking", false);
+    //   break;
 
     default:
       VmdControl("loop", true);
