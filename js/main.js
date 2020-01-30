@@ -147,6 +147,7 @@ VmdControl = (id, loop) => {
   // 
   helper.add(mesh, {
     animation: MotionObjects[index].VmdClip,
+    // trueにすると物理演算が働きます(めっちゃ変ですけどね)
     physics: false
   });
 
