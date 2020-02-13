@@ -1,4 +1,4 @@
-// ↓まずは各jsでどこ使うねんていう宣言
+// ↓宣言
 let scene, renderer, camera, mesh, helper;
 
 // 準備出来てないのでfalse
